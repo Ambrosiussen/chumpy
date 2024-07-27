@@ -9,21 +9,22 @@ See LICENCE.txt for licensing and contact information.
 
 __all__ = ['Ch', 'depends_on', 'MatVecMult', 'ChHandle', 'ChLambda']
 
-import os, sys, time
-import inspect
-import scipy.sparse as sp
-import numpy as np
-import numbers
-import weakref
-import copy as external_copy
-from functools import wraps
-from scipy.sparse.linalg.interface import LinearOperator
-from .utils import row, col, timer, convert_inputs_to_sparse_if_necessary
 import collections
+import copy as external_copy
+import inspect
+import numbers
+import os
+import sys
+import time
+import weakref
 from copy import deepcopy
-from functools import reduce
+from functools import reduce, wraps
 
+import numpy as np
+import scipy.sparse as sp
+from scipy.sparse.linalg.interface import LinearOperator
 
+from .utils import col, convert_inputs_to_sparse_if_necessary, row, timer
 
 # Turn this on if you want the profiler injected
 DEBUG = False
@@ -637,7 +638,8 @@ class Ch(object):
                 return rhs.T.dot(lhs.T).T
             return lhs.dot(rhs)
         except Exception as e:
-            import sys, traceback
+            import sys
+            import traceback
             traceback.print_exc(file=sys.stdout)
             if DEBUG:
                 import pdb; pdb.post_mortem()
@@ -865,8 +867,8 @@ class Ch(object):
         Optionally accpet current_node arg to highlight the current node we are in
         '''
         import os
-        import tempfile
         import subprocess
+        import tempfile
 
         assert DEBUG, "Please use dr tree visualization functions in debug mode"
 
@@ -957,8 +959,8 @@ class Ch(object):
         self.loop_children_do(self.reset_flag)
 
     def show_tree_wrt(self, wrt):
-        import tempfile
         import subprocess
+        import tempfile
 
         assert DEBUG, "Please use dr tree visualization functions in debug mode"
 
@@ -1003,8 +1005,8 @@ class Ch(object):
     
     def show_tree(self, cachelim=np.inf):
         """Cachelim is in Mb. For any cached jacobians above cachelim, they are also added to the graph. """
-        import tempfile
         import subprocess
+        import tempfile
 
         assert DEBUG, "Please use dr tree visualization functions in debug mode"
 
@@ -1200,7 +1202,12 @@ def depends_on(*dependencies):
             [deps.add(d) for d in dep]
     
     def _depends_on(func):
-        want_out = 'out' in inspect.getargspec(func).args
+        if sys.version_info[0] <= 3 and sys.version_info[1] < 6:  # If Python version is less than 3.6
+            # use getargspec
+            want_out = 'out' in inspect.getargspec(func).args
+        else:
+            # use getfullargspec
+            want_out = 'out' in inspect.getfullargspec(func).args
         
         @wraps(func)
         def with_caching(self, *args, **kwargs):
@@ -1308,16 +1315,19 @@ class ChGroup(Ch):
 
 from .ch_ops import *
 from .ch_ops import __all__ as all_ch_ops
+
 __all__ += all_ch_ops
 
 from .reordering import *
 from .reordering import Permute
 from .reordering import __all__ as all_reordering
+
 __all__ += all_reordering
 
 
-from . import linalg
 from . import ch_random as random
+from . import linalg
+
 __all__ += ['linalg', 'random']
 
 
@@ -1353,7 +1363,6 @@ def main():
     print(foo)
     
     import pdb; pdb.set_trace()
-    
     # import unittest
     # from test_ch import TestCh
     # suite = unittest.TestLoader().loadTestsFromTestCase(TestCh)
